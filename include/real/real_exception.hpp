@@ -7,7 +7,7 @@ namespace boost {
     namespace real {
         struct precision_exception : public std::exception {
             const char * what () const throw () override {
-                return "The boost::real number precision is too slow to compare both numbers";
+                return "The boost::real number precision is too low to compare both numbers";
             }
         };
 
