@@ -29,7 +29,7 @@ TEST_CASE("Iterate boost::real_algorithm::const_precision_iterator until full pr
                         if (n == 0) return 1;
                         else if (n == 10 || n == 20) return 8;
                         else return 9;
-                    }, 0);
+                    }, 1);
             auto approximation_it = boost::real::real(a).get_real_itr().cbegin();
 
             length = approximation_it.get_interval().upper_bound - approximation_it.get_interval().lower_bound;
@@ -62,7 +62,7 @@ TEST_CASE("Iterate boost::real_algorithm::const_precision_iterator until full pr
                         if (n == 0) return 1;
                         else if (n == 10 || n == 20) return 8;
                         else return 9;
-                    }, 3, false);
+                    }, 1, false);
             auto approximation_it = boost::real::real(a).get_real_itr().cbegin();
 
             length = approximation_it.get_interval().upper_bound - approximation_it.get_interval().lower_bound;
