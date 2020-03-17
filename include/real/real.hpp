@@ -327,134 +327,99 @@ namespace boost {
                 std::shared_ptr<real_data<T>> a;
                 std::shared_ptr<real_data<T>> b;
                 std::shared_ptr<real_data<T>> x;
-
+            try{
                 if(auto op_ptr = std::get_if<real_operation<T>>(this->_real_p->get_real_ptr())) { // lhs real_operation
                     if (auto op_ptr2 = std::get_if<real_operation<T>>(other._real_p->get_real_ptr())) { // lhs, rhs real_operation
                         if ((op_ptr->get_operation() == OPERATION::MULTIPLICATION) && op_ptr2->get_operation() == OPERATION::MULTIPLICATION) {
-                            if (op_ptr->lhs() == op_ptr2->lhs()) { // x * a + x * b = (a + b) * x
+                            if (real(op_ptr->lhs()) == real(op_ptr2->lhs())) { // x * a + x * b = (a + b) * x
                                 a = op_ptr->rhs();
                                 b = op_ptr2->rhs();
                                 x = op_ptr->lhs();
 
-                            } else if (op_ptr->lhs() == op_ptr2->rhs()) { // x * a + b * x = (a + b) * x
+                            } else if (real(op_ptr->lhs()) == real(op_ptr2->rhs())) { // x * a + b * x = (a + b) * x
                                 a = op_ptr->rhs();
                                 b = op_ptr2->lhs();
                                 x = op_ptr->lhs();
 
-                            } else if (op_ptr->rhs() == op_ptr2->lhs()) { // a * x + x * b = (a + b) * x
+                            } else if (real(op_ptr->rhs()) == real(op_ptr2->lhs())) { // a * x + x * b = (a + b) * x
                                 a = op_ptr->lhs();
                                 b = op_ptr2->rhs();
                                 x = op_ptr->rhs();
 
-                            } else if (op_ptr->rhs() == op_ptr2->rhs()) { // a * x + b * x = (a + b) * x
+                            } else if (real(op_ptr->rhs()) == real(op_ptr2->rhs())) { // a * x + b * x = (a + b) * x
                                 a = op_ptr->lhs();
                                 b = op_ptr2->lhs();
                                 x = op_ptr->rhs();
                             } else {
                                 return std::make_pair(false, std::nullopt);
                             }
+                          }
 
-                            real<T> a_op_b;
+                          else if ((op_ptr->get_operation() == OPERATION::DIVISION) && op_ptr2->get_operation() == OPERATION::DIVISION
+                          && real(op_ptr->rhs()) == real(op_ptr2->rhs())){  // a / x + b / x = (a + b) / x
+                            a = op_ptr->lhs();
+                            b = op_ptr2->lhs();
+                            x = op_ptr->rhs();
+                          }
 
-                            if(op == OPERATION::ADDITION) {
-                                switch(rc_lvl) {
-                                    case (RECURSION_LEVEL::TWO):
-                                        a_op_b = real(a).add(real(b), RECURSION_LEVEL::ONE);
-                                        break;
-                                    case (RECURSION_LEVEL::ONE):
-                                        a_op_b = real(a).add(real(b), RECURSION_LEVEL::ZERO);
-                                        break;
-                                    default:
-                                        throw invalid_recursion_level_exception();
-                                }
-                            } else if (op == OPERATION::SUBTRACTION) {
-                                switch(rc_lvl) {
-                                    case (RECURSION_LEVEL::TWO):
-                                        a_op_b = real(a).subtract(real(b), RECURSION_LEVEL::ONE);
-                                        break;
-                                    case (RECURSION_LEVEL::ONE):
-                                        a_op_b = real(a).subtract(real(b), RECURSION_LEVEL::ZERO);
-                                        break;
-                                    default:
-                                        throw invalid_recursion_level_exception();
-                                }
-                            } else {
-                                throw invalid_distribution_operation_exception();
-                            }
+                          else return std::make_pair(false, std::nullopt);
 
-                            if(assign_and_return_void) {
-                                this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(a_op_b._real_p, x, OPERATION::MULTIPLICATION));
-                                return std::make_pair(true, std::nullopt);
-                            } else {
-                                return std::make_pair(true, real(real_operation<T>(a_op_b._real_p, x, OPERATION::MULTIPLICATION)));
-                            }
-                        }
+                          real<T> a_op_b;
+
+                          if(op == OPERATION::ADDITION) {
+                              switch(rc_lvl) {
+                                  case (RECURSION_LEVEL::TWO):
+                                      a_op_b = real(a).add(real(b), RECURSION_LEVEL::ONE);
+                                      break;
+                                  case (RECURSION_LEVEL::ONE):
+                                      a_op_b = real(a).add(real(b), RECURSION_LEVEL::ZERO);
+                                      break;
+                                  default:
+                                      throw invalid_recursion_level_exception();
+                              }
+                          } else if (op == OPERATION::SUBTRACTION) {
+                              switch(rc_lvl) {
+                                  case (RECURSION_LEVEL::TWO):
+                                      a_op_b = real(a).subtract(real(b), RECURSION_LEVEL::ONE);
+                                      break;
+                                  case (RECURSION_LEVEL::ONE):
+                                      a_op_b = real(a).subtract(real(b), RECURSION_LEVEL::ZERO);
+                                      break;
+                                  default:
+                                      throw invalid_recursion_level_exception();
+                              }
+                          } else {
+                              throw invalid_distribution_operation_exception();
+                          }
+
+                          if(assign_and_return_void) {
+                              if(op_ptr->get_operation() == OPERATION::DIVISION)
+                                  this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(a_op_b._real_p, x, OPERATION::DIVISION));
+                              else
+                                  this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(a_op_b._real_p, x, OPERATION::MULTIPLICATION));
+                              return std::make_pair(true, std::nullopt);
+                          } else {
+                              if(op_ptr->get_operation() == OPERATION::DIVISION)
+                                  return std::make_pair(true, real(real_operation<T>(a_op_b._real_p, x, OPERATION::DIVISION)));
+                              else
+                                  return std::make_pair(true, real(real_operation<T>(a_op_b._real_p, x, OPERATION::MULTIPLICATION)));
+                          }
+
                     } else { // lhs is an operation, but rhs is not an operation
-                        if (op_ptr->get_operation() == OPERATION::MULTIPLICATION) { 
-                            if (other._real_p == op_ptr->lhs()) { // (a * x) + a -> (x + 1) * a
-                                a = op_ptr->lhs();
-                                x = op_ptr->rhs();
-
-                            } else if (other._real_p == op_ptr->rhs()) {// (x * a) + a -> (x + 1) * a
-                                a = op_ptr->rhs();
-                                x = op_ptr->lhs();
-                            } else {
-                                return std::make_pair(false, std::nullopt);
-                            }
-
-                            real<T> one ("1");
-                            real<T> x_op_1;
-
-                            if(op == OPERATION::ADDITION) {
-                                switch(rc_lvl) {
-                                    case (RECURSION_LEVEL::TWO):
-                                        x_op_1 = real(x).add(real(one), RECURSION_LEVEL::ONE);
-                                        break;
-                                    case (RECURSION_LEVEL::ONE):
-                                        x_op_1 = real(a).add(real(one), RECURSION_LEVEL::ZERO);
-                                        break;
-                                    default:
-                                        throw invalid_recursion_level_exception();
-                                }
-                            }
-                            else if (op == OPERATION::SUBTRACTION) {
-                                switch(rc_lvl) {
-                                    case (RECURSION_LEVEL::TWO):
-                                        x_op_1 = real(a).subtract(real(b), RECURSION_LEVEL::ONE);
-                                        break;
-                                    case (RECURSION_LEVEL::ONE):
-                                        x_op_1 = real(a).subtract(real(b), RECURSION_LEVEL::ZERO);
-                                        break;
-                                    default:
-                                        throw invalid_recursion_level_exception();
-                                }
-                            } else {
-                                throw invalid_distribution_operation_exception();
-                            }
-
-                            if(assign_and_return_void) {
-                                this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(x_op_1._real_p, a, OPERATION::MULTIPLICATION));
-                                return std::make_pair(true, std::nullopt);
-                            } else {
-                                return std::make_pair(true, real(real_operation<T>(x_op_1._real_p, a, OPERATION::MULTIPLICATION)));
-                            }
-                        } 
-                    }
-                } else if(auto op_ptr = std::get_if<real_operation<T>>(&other._real_p->get_real_number())) { // lhs is not an operation, but rhs is
                     if (op_ptr->get_operation() == OPERATION::MULTIPLICATION) {
-                        if (this->_real_p == op_ptr->lhs()) { // a + (a * x) -> (x + 1) * a
-                            a = this->_real_p;
+                        if (other == real(op_ptr->lhs())) { // (a * x) + a -> (x + 1) * a
+                            a = op_ptr->lhs();
                             x = op_ptr->rhs();
 
-                        } else if (this->_real_p == op_ptr->rhs()) {// a + (x * a) -> (x + 1) * a
-                            a = this->_real_p;
+                        } else if (other == real(op_ptr->rhs())) {// (x * a) + a -> (x + 1) * a
+                            a = op_ptr->rhs();
                             x = op_ptr->lhs();
                         } else {
                             return std::make_pair(false, std::nullopt);
                         }
 
-                        real<T> x_op_1;
                         real<T> one ("1");
+                        real<T> x_op_1;
 
                         if(op == OPERATION::ADDITION) {
                             switch(rc_lvl) {
@@ -471,10 +436,10 @@ namespace boost {
                         else if (op == OPERATION::SUBTRACTION) {
                             switch(rc_lvl) {
                                 case (RECURSION_LEVEL::TWO):
-                                    x_op_1 = real(a).subtract(real(b), RECURSION_LEVEL::ONE);
+                                    x_op_1 = real(x).subtract(real(one), RECURSION_LEVEL::ONE);
                                     break;
                                 case (RECURSION_LEVEL::ONE):
-                                    x_op_1 = real(a).subtract(real(b), RECURSION_LEVEL::ZERO);
+                                    x_op_1 = real(x).subtract(real(one), RECURSION_LEVEL::ZERO);
                                     break;
                                 default:
                                     throw invalid_recursion_level_exception();
@@ -484,28 +449,84 @@ namespace boost {
                         }
 
                         if(assign_and_return_void) {
-                            this->_real_p = std::make_shared<real_data<T>>(real_operation(x_op_1._real_p, a, OPERATION::MULTIPLICATION));
+                            this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(x_op_1._real_p, a, OPERATION::MULTIPLICATION));
                             return std::make_pair(true, std::nullopt);
                         } else {
-                            return std::make_pair(true, real(real_operation(x_op_1._real_p, a, OPERATION::MULTIPLICATION)));
+                            return std::make_pair(true, real(real_operation<T>(x_op_1._real_p, a, OPERATION::MULTIPLICATION)));
                         }
                     }
-                } else { // neither is an operation
-                    if ((this->_real_p == other._real_p) && (op == OPERATION::ADDITION)) { // a + a = 2 * a
-                        std::shared_ptr<real_data<T>> two = std::make_shared<real_data<T>>(real_explicit<T>("2"));
+                }
+            } else if(auto op_ptr = std::get_if<real_operation<T>>(&other._real_p->get_real_number())) { // lhs is not an operation, but rhs is
+                if (op_ptr->get_operation() == OPERATION::MULTIPLICATION) {
+                    if (*(this) == real(op_ptr->lhs())) { // a + (a * x) -> (1 + x) * a
+                        a = this->_real_p;
+                        x = op_ptr->rhs();
 
-                        if(assign_and_return_void) {
-                            this->_real_p = std::make_shared<real_data<T>>(real_operation(two, this->_real_p, OPERATION::MULTIPLICATION));
-                            return std::make_pair(true, std::nullopt);
-                        } else {
-                            return std::make_pair(true, real(real_operation(two, this->_real_p, OPERATION::MULTIPLICATION)));
+                    } else if (*(this) == real(op_ptr->rhs())) {// a + (x * a) -> (1 + x) * a
+                        a = this->_real_p;
+                        x = op_ptr->lhs();
+                    } else {
+                        return std::make_pair(false, std::nullopt);
+                    }
+
+                    real<T> x_op_1;
+                    real<T> one ("1");
+
+                    if(op == OPERATION::ADDITION) {
+                        switch(rc_lvl) {
+                            case (RECURSION_LEVEL::TWO):
+                                x_op_1 = real(one).add(real(x), RECURSION_LEVEL::ONE);
+                                break;
+                            case (RECURSION_LEVEL::ONE):
+                                x_op_1 = real(one).add(real(x), RECURSION_LEVEL::ZERO);
+                                break;
+                            default:
+                                throw invalid_recursion_level_exception();
                         }
-                    } 
-                } 
+                    }
+                    else if (op == OPERATION::SUBTRACTION) {
+                        switch(rc_lvl) {
+                            case (RECURSION_LEVEL::TWO):
+                                x_op_1 = real(one).subtract(real(x), RECURSION_LEVEL::ONE);
+                                break;
+                            case (RECURSION_LEVEL::ONE):
+                                x_op_1 = real(one).subtract(real(x), RECURSION_LEVEL::ZERO);
+                                break;
+                            default:
+                                throw invalid_recursion_level_exception();
+                        }
+                    } else {
+                        throw invalid_distribution_operation_exception();
+                    }
+
+                    if(assign_and_return_void) {
+                        this->_real_p = std::make_shared<real_data<T>>(real_operation(x_op_1._real_p, a, OPERATION::MULTIPLICATION));
+                        return std::make_pair(true, std::nullopt);
+                    } else {
+                        return std::make_pair(true, real(real_operation(x_op_1._real_p, a, OPERATION::MULTIPLICATION)));
+                    }
+                }
+            } else { // neither is an operation
+                if (*(this) == other && (op == OPERATION::ADDITION)) { // a + a = 2 * a
+                    std::shared_ptr<real_data<T>> two = std::make_shared<real_data<T>>(real_explicit<T>("2"));
+
+                    if(assign_and_return_void) {
+                        this->_real_p = std::make_shared<real_data<T>>(real_operation(two, this->_real_p, OPERATION::MULTIPLICATION));
+                        return std::make_pair(true, std::nullopt);
+                    } else {
+                        return std::make_pair(true, real(real_operation(two, this->_real_p, OPERATION::MULTIPLICATION)));
+                    }
+                  }
+                }
 
                 // at this point, we cannot distribute.
                 return std::make_pair(false, std::nullopt);
             }
+                // if comparision cannot be done at the current precision
+            catch(boost::real::precision_exception &){
+                return std::make_pair(false, std::nullopt);
+            }
+        }
             
 
             // helper function used in check_and_distribute to limit recursion
