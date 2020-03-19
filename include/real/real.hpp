@@ -783,14 +783,13 @@ namespace boost {
                 throw boost::real::precision_exception();
             }
 
-            /**
-             * @brief Compares the *this boost::real::real number against the other boost::real::real number to
-             * determine if the number represented by *this is the same than the number represented by other.
+             * @brief Compares the *this boost::real::real number to the other boost::real::real number to
+             * determine if the number represented by *this is equal to the number represented by other.
              * If the maximum precision is reached and the operator was not yet able to determine
              * the value of the result, a precision_exception is thrown.
              *
              * @param other - a boost::real::real number to compare against.
-             * @return a bool that is true if *this < other and false in other cases.
+             * @return a bool that is true if *this == other and false in other cases.
              *
              * @throws boost::real::precision_exception
              */
@@ -821,6 +820,21 @@ namespace boost {
                 // we cannot know if they are equals or not.
                 throw boost::real::precision_exception();
             }
+
+            /**
+             * @brief Compares the *this boost::real::real number to the other boost::real::real number to
+             * determine if the number represented by *this is not equal to the number represented by other.
+             * If the maximum precision is reached and the operator was not yet able to determine
+             * the value of the result, a precision_exception is thrown.
+             *
+             * @param other - a boost::real::real number to compare against.
+             * @return a bool that is true if *this != other and false in other cases.
+             *
+             * @throws boost::real::precision_exception
+             */
+             bool operator!=(const real<T>& other) const {
+                return !(*(this) == other);
+             }
             /********* END OPERATORS *********/
 
             /**
